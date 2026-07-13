@@ -84,6 +84,16 @@ class Settings:
     swap_time: float = DEFAULT_SWAP
 
 
+def cp(mon, level, iv_atk=15, iv_def=15, iv_sta=15):
+    """計算 CP:floor((Atk+IV)·√(Def+IV)·√(Sta+IV)·CPM²/10),下限 10。"""
+    m = cpm(level)
+    raw = ((mon["base"]["atk"] + iv_atk)
+           * (mon["base"]["def"] + iv_def) ** 0.5
+           * (mon["base"]["sta"] + iv_sta) ** 0.5
+           * m * m / 10.0)
+    return max(10, floor(raw))
+
+
 def effective_stats(mon, level, is_shadow):
     """回傳(有效攻擊, 有效防禦, 有效HP)。"""
     m = cpm(level)

@@ -4,6 +4,10 @@ import pandas as pd
 
 from . import calc, loader
 
+# 排名表欄位結構版本:欄位增減時 +1,讓 UI 層的 st.cache_data 舊快取失效
+# (Streamlit 熱重載不會清記憶體快取,否則會拿到缺新欄位的舊 DataFrame)
+SCHEMA_VERSION = 2
+
 
 def _usable_moves(mon, s: calc.Settings):
     """回傳(可用快招 id 清單, 可用充能招 id 清單),依 legacy 設定納入菁英招式。"""
@@ -79,9 +83,11 @@ def build_ranking(s: calc.Settings, move_type=None):
                 "fast": loader.zh_move(b["fast"]),
                 "fast_en": loader.en_move(b["fast"]),
                 "fast_type": moves[b["fast"]]["type"],
+                "fast_elite": b["fast"] in mon.get("elite_fast", []),
                 "charge": loader.zh_move(b["charge"]),
                 "charge_en": loader.en_move(b["charge"]),
                 "charge_type": moves[b["charge"]]["type"],
+                "charge_elite": b["charge"] in mon.get("elite_charged", []),
                 "dps": b["dps"],
                 "tdo": b["tdo"],
                 "edps": b["edps"],

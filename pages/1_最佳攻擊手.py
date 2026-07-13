@@ -53,39 +53,15 @@ if df.empty:
     st.stop()
 
 # ---------------------------------------------------------------- HTML 產生器
-_TYPE_ICON = "https://cdn.jsdelivr.net/gh/PokeMiners/pogo_assets@master/Images/Types/POKEMON_TYPE_{t}.png"
+# 名字/屬性/招式/Tier 的渲染共用 ui_common(與圖鑑頁一致)
+type_cell = ui_common.type_cell
+move_cell = ui_common.move_cell
+tier_chip = ui_common.tier_chip
+pokemon_cell = ui_common.pokemon_cell
 
 
-def type_icon(t, size=16):
-    return (f'<img src="{_TYPE_ICON.format(t=t)}" width="{size}" height="{size}" '
-            f'style="vertical-align:-3px" loading="lazy">')
-
-
-def type_cell(types):
-    parts = []
-    for t in types:
-        c = TYPE_COLORS.get(t, "#888")
-        parts.append(f'{type_icon(t)}&nbsp;<span style="color:{c};font-weight:600">{type_zh(t)}</span>')
-    return "<br>".join(parts)
-
-
-def move_cell(zh, en, t):
-    c = TYPE_COLORS.get(t, "#888")
-    return (f'{type_icon(t)}&nbsp;<span style="color:{c};font-weight:600">{_html.escape(zh)}'
-            f' <span style="opacity:.6;font-size:.85em;font-weight:400">{_html.escape(en)}</span></span>')
-
-
-def tier_chip(tier):
-    return (f'<span style="background:{TIER_COLORS.get(tier, "#94A3B8")};color:#fff;'
-            f'border-radius:6px;padding:1px 8px;font-weight:700;font-size:.85em">{tier}</span>')
-
-
-def pokemon_cell(r):
-    return (f'<div style="display:flex;align-items:center;gap:10px">'
-            f'<img src="{r["sprite"]}" width="64" height="64" loading="lazy" '
-            f'style="object-fit:contain;flex:none">'
-            f'<div><div style="font-weight:700">{ui_common.styled_name(r["name"])}</div>'
-            f'<div style="opacity:.6;font-size:.85em">{_html.escape(r["name_en"])}</div></div></div>')
+def _badge(is_elite):
+    return ui_common.legacy_badge() if is_elite else ""
 
 
 def build_cards(df4, accent, title):
@@ -94,11 +70,13 @@ def build_cards(df4, accent, title):
         cards.append(f"""
 <div style="flex:1;min-width:170px;border:1px solid rgba(128,128,128,.35);border-radius:12px;
      border-top:5px solid {accent};padding:10px 6px;text-align:center">
+  <a class="pgx-link" href="{ui_common.dex_url(r['uid'])}" target="_self">
   <img src="{r['sprite']}" width="92" height="92" style="object-fit:contain"><br>
   {tier_chip(r['tier'])}
-  <div style="font-weight:700;font-size:1.02em;margin-top:2px">#{r['rank']} {ui_common.styled_name(r['name'])}</div>
+  <div style="font-weight:700;font-size:1.02em;margin-top:2px">#{r['rank']} <span class="pgx-name">{ui_common.styled_name(r['name'])}</span></div>
   <div style="opacity:.6;font-size:.8em">{_html.escape(r['name_en'])}</div>
-  <div style="font-size:.82em;margin-top:4px">{move_cell(r['fast'], '', r['fast_type'])} ・ {move_cell(r['charge'], '', r['charge_type'])}</div>
+  </a>
+  <div style="font-size:.82em;margin-top:4px">{move_cell(r['fast'], '', r['fast_type'], _badge(r['fast_elite']))} ・ {move_cell(r['charge'], '', r['charge_type'], _badge(r['charge_elite']))}</div>
   <div style="font-size:.9em;margin-top:2px"><b>eDPS {r['edps']:.2f}</b>　TDO {r['tdo']:.0f}</div>
 </div>""")
     return (f'<h4><span style="background:{accent};color:#fff;border-radius:8px;'
@@ -136,8 +114,8 @@ def build_table(view, use_rowspan):
         tds.append(f'<td class="pgx-num">{r["rank"]}</td>')
         tds.append(f"<td>{pokemon_cell(r)}</td>")
         tds.append(f"<td>{type_cell(r['types'])}</td>")
-        tds.append(f"<td>{move_cell(r['fast'], r['fast_en'], r['fast_type'])}</td>")
-        tds.append(f"<td>{move_cell(r['charge'], r['charge_en'], r['charge_type'])}</td>")
+        tds.append(f"<td>{move_cell(r['fast'], r['fast_en'], r['fast_type'], _badge(r['fast_elite']))}</td>")
+        tds.append(f"<td>{move_cell(r['charge'], r['charge_en'], r['charge_type'], _badge(r['charge_elite']))}</td>")
         tds.append(f'<td class="pgx-num">{r["dps"]:.2f}</td>')
         tds.append(f'<td class="pgx-num">{r["tdo"]:.1f}</td>')
         tds.append(f'<td class="pgx-num"><b>{r["edps"]:.2f}</b></td>')
@@ -148,19 +126,6 @@ def build_table(view, use_rowspan):
     return (f'<div style="overflow-x:auto"><table class="pgx-table">'
             f"<thead><tr>{thead}</tr></thead><tbody>{''.join(rows)}</tbody></table></div>")
 
-
-_CSS = """
-<style>
-.pgx-table {width:100%;border-collapse:collapse;font-size:.92em}
-.pgx-table th {background:rgba(128,128,128,.14);padding:7px 8px;text-align:left;
-  border-bottom:2px solid rgba(128,128,128,.4);white-space:nowrap}
-.pgx-table td {padding:6px 8px;border-bottom:1px solid rgba(128,128,128,.22);vertical-align:middle}
-.pgx-table tbody tr:hover td {background:rgba(128,128,128,.08)}
-.pgx-num {text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pgx-tier {color:#fff;font-weight:800;text-align:center;min-width:56px;
-  border-bottom:1px solid rgba(255,255,255,.35) !important}
-</style>
-"""
 
 # ---------------------------------------------------------------- 組裝與輸出
 view = df.copy()
@@ -177,7 +142,7 @@ title = T["type_overall"] if move_type is None else type_zh(move_type)
 if s.boss_types:
     title += f"　{T['vs_boss']}({'／'.join(type_zh(t) for t in s.boss_types)})"
 
-html = _CSS + build_cards(df.head(4), accent, title) + build_table(view, use_rowspan)
+html = ui_common.PGX_CSS + build_cards(df.head(4), accent, title) + build_table(view, use_rowspan)
 st.markdown(html, unsafe_allow_html=True)  # 單一元件:卡片+表格一次原子更新
 
 st.caption(T["metric_note"] + f"　共 {len(df)} 筆結果，顯示 {len(view)} 筆。")

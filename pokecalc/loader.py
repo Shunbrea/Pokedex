@@ -15,8 +15,83 @@ def _load(name):
     return _cache[name]
 
 
+OVERRIDES_PATH = os.path.join(DATA_DIR, "overrides.json")
+
+
+def overrides():
+    """本地覆寫(data/overrides.json):補招式、修 released。檔案不存在回傳空結構。
+
+    key 為寶可夢 uid;暗影變體查不到時回退本體 uid(去 _SHADOW 後綴)。
+    """
+    if "overrides" not in _cache:
+        try:
+            with open(OVERRIDES_PATH, encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {}
+        _cache["overrides"] = {
+            "add_moves": data.get("add_moves", {}),
+            "released": data.get("released", {}),
+        }
+    return _cache["overrides"]
+
+
+def overrides_token():
+    """overrides.json 的 mtime,供跨模組快取(如排名表)當失效 key。"""
+    try:
+        return os.path.getmtime(OVERRIDES_PATH)
+    except OSError:
+        return 0.0
+
+
+def _apply_overrides(mon, ov, valid_moves):
+    """回傳套用覆寫後的寶可夢條目(淺複本;原始資料不動)。"""
+    uid = mon["uid"]
+    base_uid = uid[:-7] if uid.endswith("_SHADOW") else uid
+    keys = [uid] if uid == base_uid else [uid, base_uid]
+
+    e = dict(mon)
+    for key in keys:
+        add = ov["add_moves"].get(key)
+        if add:
+            for field in ("fast", "charged", "elite_fast", "elite_charged"):
+                ids = [m for m in add.get(field, []) if m in valid_moves]
+                if ids:
+                    e[field] = sorted(set(e.get(field, [])) | set(ids))
+    for key in keys:  # uid 優先於本體 uid
+        if key in ov["released"]:
+            e["released"] = bool(ov["released"][key])
+            break
+    return e
+
+
 def pokemon():
-    return _load("pokemon.json")
+    """寶可夢清單(已套用 data/overrides.json 的本地覆寫)。"""
+    if "pokemon" not in _cache:
+        ov = overrides()
+        mv = moves()
+        _cache["pokemon"] = [_apply_overrides(m, ov, mv) for m in _load("pokemon.json")]
+    return _cache["pokemon"]
+
+
+def set_released_override(uid: str, released: bool):
+    """寫入/移除某 uid 的 released 覆寫(與上游值相同時移除),並清除快取。"""
+    src = next((m["released"] for m in _load("pokemon.json") if m["uid"] == uid), None)
+    try:
+        with open(OVERRIDES_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = {}
+    rel = data.setdefault("released", {})
+    if src is not None and bool(released) == bool(src):
+        rel.pop(uid, None)
+    else:
+        rel[uid] = bool(released)
+    with open(OVERRIDES_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    _cache.pop("overrides", None)
+    _cache.pop("pokemon", None)
 
 
 def moves():

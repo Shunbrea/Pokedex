@@ -1,8 +1,22 @@
 {
   "add_moves": {
-    "MEWTWO": {"elite_fast": ["COUNTER_FAST"]},
-    "MEWTWO_MEGA_X": {"elite_fast": ["COUNTER_FAST"]},
-    "MEWTWO_MEGA_Y": {"elite_fast": ["COUNTER_FAST"]}
+    "MEWTWO": {
+      "elite_fast": [
+        "COUNTER_FAST"
+      ]
+    },
+    "MEWTWO_MEGA_X": {
+      "elite_fast": [
+        "COUNTER_FAST"
+      ]
+    },
+    "MEWTWO_MEGA_Y": {
+      "elite_fast": [
+        "COUNTER_FAST"
+      ]
+    }
   },
-  "released": {}
+  "released": {
+    "ZERAORA": true
+  }
 }

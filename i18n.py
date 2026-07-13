@@ -110,6 +110,38 @@ T = {
     "movesets": "招式組合表現(依目前設定)",
     "fast_moves": "一般招式",
     "charge_moves": "特殊招式",
+    "released_yes": "已實裝",
+    "released_no": "未實裝",
+    "released_toggle": "已在遊戲實裝",
+    "released_toggle_help": "手動標記實裝狀態(存於 data/overrides.json,重啟後保留;"
+                            "未實裝的寶可夢預設不會出現在攻擊手排名)",
+    "unreleased_suffix": "・未實裝",
+    "legacy_badge": "傳承",
+    "stab_badge": "本系",
+    "effective_at_level": "L{level} 有效值",
+    "beats_pct": "勝過 {pct}%",
+    "sec_cp": "CP 一覽",
+    "cp_max40": "最大 CP(L40)",
+    "cp_max50": "最大 CP(L50)",
+    "cp_raid": "團體戰捕捉(L20)",
+    "cp_raid_wb": "天氣加成捕捉(L25)",
+    "cp_iv_note": "最大 CP 以 IV 15/15/15 計;團體戰捕捉為 IV 10~15 的 CP 區間。",
+    "sec_matchups": "屬性相剋(防守)",
+    "weaknesses": "弱點",
+    "resistances": "抗性",
+    "sec_weather": "天氣加成",
+    "weather_note": "對應天氣下,該屬性招式傷害 ×1.2,且捕捉到的個體等級較高。",
+    "sec_rank": "攻擊手榜排名(依目前設定)",
+    "rank_overall": "整體榜",
+    "type_board": "榜",
+    "not_ranked": "未入榜",
+    "not_ranked_unreleased": "未入榜(未實裝;可於上方標記已實裝)",
+    "col_power": "威力",
+    "col_energy": "能量",
+    "col_duration": "時長",
+    "col_bars": "格數",
+    "col_move": "招式",
+    "best_combo": "最佳",
 
     # 其他
     "data_version": "資料版本",
@@ -143,6 +175,17 @@ TYPE_COLORS = {
     "GROUND": "#D97746", "FLYING": "#8FA8DD", "PSYCHIC": "#F97176", "BUG": "#90C12C",
     "ROCK": "#C7B78B", "GHOST": "#5269AC", "DRAGON": "#0A6DC4", "DARK": "#5A5366",
     "STEEL": "#5A8EA1", "FAIRY": "#EC8FE6",
+}
+
+# 屬性 → 加成天氣(繁中,遊戲內名稱)
+TYPE_WEATHER = {
+    "GRASS": "晴天", "GROUND": "晴天", "FIRE": "晴天",
+    "WATER": "雨天", "ELECTRIC": "雨天", "BUG": "雨天",
+    "ICE": "下雪", "STEEL": "下雪",
+    "FAIRY": "多雲", "FIGHTING": "多雲", "POISON": "多雲",
+    "DARK": "起霧", "GHOST": "起霧",
+    "DRAGON": "強風", "FLYING": "強風", "PSYCHIC": "強風",
+    "NORMAL": "時晴", "ROCK": "時晴",
 }
 
 # Tier 徽章色

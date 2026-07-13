@@ -4,12 +4,13 @@
 """
 
 import html as _html
+import urllib.parse
 
 import streamlit as st
 
 from pokecalc import calc, loader, rankings
 from pokecalc.typechart import CHART, TYPES
-from i18n import T, type_zh
+from i18n import T, TIER_COLORS, TYPE_COLORS, type_zh
 
 # 特殊形態關鍵字徽章色:暗影=紫、超級=玫紅、原始=琥珀
 _PREFIX_BADGES = [("暗影", "#7C3AED"), ("超級", "#E11D48"), ("原始", "#F59E0B")]
@@ -26,6 +27,78 @@ def styled_name(name: str) -> str:
                     f'padding:0 6px;font-size:.78em;font-weight:700;'
                     f'vertical-align:1px">{kw}</span> {_html.escape(rest)}')
     return _html.escape(name)
+
+
+# ---------------------------------------------------------------- 共用 HTML 渲染
+# 排名頁與圖鑑頁共用,確保名字/屬性/招式的視覺一致。
+_TYPE_ICON = "https://cdn.jsdelivr.net/gh/PokeMiners/pogo_assets@master/Images/Types/POKEMON_TYPE_{t}.png"
+
+
+def dex_url(uid: str) -> str:
+    """圖鑑頁深連結(Streamlit 頁面路徑 = 檔名去數字前綴)。"""
+    return "/" + urllib.parse.quote("寶可夢圖鑑") + f"?uid={urllib.parse.quote(uid)}"
+
+
+def type_icon(t, size=16):
+    return (f'<img src="{_TYPE_ICON.format(t=t)}" width="{size}" height="{size}" '
+            f'style="vertical-align:-3px" loading="lazy">')
+
+
+def type_cell(types, sep="<br>"):
+    parts = []
+    for t in types:
+        c = TYPE_COLORS.get(t, "#888")
+        parts.append(f'{type_icon(t)}&nbsp;<span style="color:{c};font-weight:600">{type_zh(t)}</span>')
+    return sep.join(parts)
+
+
+def move_cell(zh, en, t, badge=""):
+    c = TYPE_COLORS.get(t, "#888")
+    return (f'{type_icon(t)}&nbsp;<span style="color:{c};font-weight:600">{_html.escape(zh)}'
+            f' <span style="opacity:.6;font-size:.85em;font-weight:400">{_html.escape(en)}</span></span>{badge}')
+
+
+def legacy_badge():
+    return (f'<span style="background:#F97316;color:#fff;border-radius:5px;padding:0 5px;'
+            f'font-size:.72em;font-weight:700;vertical-align:1px;margin-left:4px">{T["legacy_badge"]}</span>')
+
+
+def stab_badge():
+    return (f'<span style="background:rgba(128,128,128,.25);border-radius:5px;padding:0 5px;'
+            f'font-size:.72em;font-weight:700;vertical-align:1px;margin-left:4px">{T["stab_badge"]}</span>')
+
+
+def tier_chip(tier):
+    return (f'<span style="background:{TIER_COLORS.get(tier, "#94A3B8")};color:#fff;'
+            f'border-radius:6px;padding:1px 8px;font-weight:700;font-size:.85em">{tier}</span>')
+
+
+def pokemon_cell(r):
+    """排名表的寶可夢複合欄:圖 + 中英雙名,整格連結到圖鑑。"""
+    return (f'<a class="pgx-link" href="{dex_url(r["uid"])}" target="_self">'
+            f'<span style="display:flex;align-items:center;gap:10px">'
+            f'<img src="{r["sprite"]}" width="64" height="64" loading="lazy" '
+            f'style="object-fit:contain;flex:none">'
+            f'<span><span class="pgx-name" style="display:block;font-weight:700">{styled_name(r["name"])}</span>'
+            f'<span style="display:block;opacity:.6;font-size:.85em">{_html.escape(r["name_en"])}</span></span>'
+            f'</span></a>')
+
+
+PGX_CSS = """
+<style>
+.pgx-table {width:100%;border-collapse:collapse;font-size:.92em}
+.pgx-table th {background:rgba(128,128,128,.14);padding:7px 8px;text-align:left;
+  border-bottom:2px solid rgba(128,128,128,.4);white-space:nowrap}
+.pgx-table td {padding:6px 8px;border-bottom:1px solid rgba(128,128,128,.22);vertical-align:middle}
+.pgx-table tbody tr:hover td {background:rgba(128,128,128,.08)}
+.pgx-num {text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pgx-tier {color:#fff;font-weight:800;text-align:center;min-width:56px;
+  border-bottom:1px solid rgba(255,255,255,.35) !important}
+.pgx-link {color:inherit;text-decoration:none}
+.pgx-link:hover .pgx-name {text-decoration:underline}
+.pgx-best td {background:rgba(34,197,94,.12)}
+</style>
+"""
 
 # 所有可調設定的預設值(key 對應 calc.Settings 欄位)
 DEFAULTS = {
@@ -201,12 +274,12 @@ def build_settings() -> calc.Settings:
 
 
 @st.cache_data(show_spinner="計算排名中…")
-def _cached_ranking(key, move_type):
-    """key 為 Settings 所有欄位的 tuple(快取鍵),move_type 為屬性。"""
+def _cached_ranking(key, move_type, data_token):
+    """key 為 Settings 所有欄位的 tuple(快取鍵),data_token 使資料覆寫變更時失效。"""
     s = calc.Settings(**dict(key))
     return rankings.build_ranking(s, move_type=move_type)
 
 
 def ranking_for(s: calc.Settings, move_type=None):
     key = tuple(sorted(s.__dict__.items()))
-    return _cached_ranking(key, move_type)
+    return _cached_ranking(key, move_type, (loader.overrides_token(), rankings.SCHEMA_VERSION))

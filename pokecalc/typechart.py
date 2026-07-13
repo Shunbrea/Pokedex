@@ -46,6 +46,19 @@ for atk, (se, nve, imm) in _REL.items():
         CHART[atk][d] = IMMUNE
 
 
+def defense_profile(defender_types):
+    """防守方(單/雙屬性)受各攻擊屬性的總倍率,依倍率分組。
+
+    回傳 {倍率: [攻擊屬性,...]},只含倍率 != 1.0 的組;倍率由高到低排列。
+    """
+    groups = {}
+    for atk in TYPES:
+        mult = round(effectiveness(atk, defender_types), 6)
+        if mult != 1.0:
+            groups.setdefault(mult, []).append(atk)
+    return dict(sorted(groups.items(), reverse=True))
+
+
 def effectiveness(move_type: str, defender_types) -> float:
     """招式屬性對(單或雙)防禦屬性的總倍率。"""
     mult = 1.0
